@@ -1,4 +1,5 @@
 telebot==0.0.5
 aiohttp==3.9.3
+flask
 asyncio==3.4.3
 python-dotenv==1.0.1
