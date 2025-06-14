@@ -6,54 +6,10 @@ from telebot.async_telebot import AsyncTeleBot
 # Configuration
 BOT_TOKEN = "7751696764:AAF-yUUwERaubehi1mqWHUygIJLAU5zr9gs"
 CHANNEL_ID = -1002659128649
-DELAYS = [300, 600, 1800, 3600, 7200]  # 5min, 10min, 30min, 1h, 2h
+DELAY = 1200  # 20 minutes in seconds (20 * 60 = 1200)
 
 # CC Database
-SAMPLE_CCS = """5262270076256800|09|2029|333
-4263700966119942|06|2026|418
-4374500004524137|07|28|894
-5355221103943454|01|2028|819
-5566250450936485|09|28|179
-5121065288719301|05|2029|556
-4374500004524137|07|28|894
-5154620022186272|07|26|312
-5154620021198930|01|2029|619
-5154620021192545|04|2028|892
-5154620021192545|04|2028|892
-5154620021192545|04|2028|892
-4263700966119942|06|2026|418
-4263700966119942|06|2026|418
-5154620021192545|04|2028|892
-5598880370623854|03|33|689
-5598880370623854|03|33|689
-4154644400819083|09|31|979
-4154644400819083|09|31|979
-5557530043023177|02|29|118
-4154644400849783|01|29|750
-5213331119976430|01|30|363
-4430490012832775|12|27|321
-4430490012832775|12|27|321
-5522850268619117|04|27|861
-5598880179097417|12|33|301
-4135751005389745|01|2029|624
-5581585422669446|02|2028|139
-4677853512093028|06|2027|954
-4135751005389745|01|2029|624
-4060429058568023|01|26|891
-4744722119720177|04|2027|266
-4744722119720177|04|2027|266
-4744722119720177|04|2027|266
-4680056032920366|04|2029|976
-4680056032909658|02|2030|778
-4680056032900723|09|2027|753
-4680056032925720|01|2035|856
-4680056032902919|06|2025|608
-4680056032956931|09|2035|313
-4680056032922891|08|2034|562
-4680056032961477|08|2030|827
-4680056032921299|07|2029|898
-4680056032918022|10|2031|116
-5154620016497800|11|2032|339
+SAMPLE_CCS = """
 5154620016424630|11|2033|682
 5154620016497826|06|2032|603
 5154620016484311|04|2034|239
@@ -10739,7 +10695,7 @@ SAMPLE_CCS = """5262270076256800|09|2029|333
 """
 
 CC_DATABASE = [cc.strip() for cc in SAMPLE_CCS.split('\n') if cc.strip()]
-posted_ccs = set()
+current_index = 0
 
 bot = AsyncTeleBot(BOT_TOKEN)
 
@@ -10785,28 +10741,23 @@ async def format_cc_message(cc):
 """
 
 async def post_ccs():
+    global current_index
     while True:
-        # Get unposted CCs
-        unposted_ccs = [cc for cc in CC_DATABASE if cc not in posted_ccs]
-        
-        if not unposted_ccs:
-            posted_ccs.clear()  # Reset if all CCs have been posted
-            unposted_ccs = CC_DATABASE.copy()
-        
-        cc = random.choice(unposted_ccs)
+        cc = CC_DATABASE[current_index]
         message = await format_cc_message(cc)
         
         if message:
             try:
                 await bot.send_message(CHANNEL_ID, message, parse_mode='HTML')
-                posted_ccs.add(cc)
                 print(f"Posted CC: {cc[:6]}••••••••")
             except Exception as e:
                 print(f"Error posting CC: {e}")
         
-        # Random delay before next post
-        delay = random.choice(DELAYS)
-        await asyncio.sleep(delay)
+        # Move to next card (cycle back to start if at end)
+        current_index = (current_index + 1) % len(CC_DATABASE)
+        
+        # Wait exactly 20 minutes before next post
+        await asyncio.sleep(DELAY)
 
 async def main():
     # Start posting CCs
@@ -10816,4 +10767,5 @@ async def main():
 
 if __name__ == '__main__':
     print(f"🤖 Bot started with {len(CC_DATABASE)} CCs")
+    print(f"⏰ Will post a new card every 20 minutes")
     asyncio.run(main())
